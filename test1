@@ -1,0 +1,102 @@
+import os
+import urllib2
+
+def delDiscrpts ( s ):
+    i = 0
+    rs = []
+    discrpts = ['Back to top','More example sentences','Get more examples']
+    for e in discrpts :
+        while s.find(e) != -1 :
+            i = s.find(e)
+            s= s[:i-1] + '\t' + s[i+len(e):] #i-2 : want to omit '\n'
+    while s.find('\n') != -1:
+        i=s.find('\n')
+        s=s[:i]+'\t'+s[i+1:]
+    return s
+
+def omitTags(page,start, end):
+    i = start
+    st = page.find('<',i) 
+    et = st
+    s = ""
+    while ( i < end ):
+        st=page.find('<',et)
+        if st == -1 :
+            break;
+        s+= page[ et+1 : st ]     
+        et=page.find('>',st+1)
+        if et == -1 :
+            break;
+        i = max( et , st)
+    return delDiscrpts ( s )
+
+def getMeaningList( word ) :
+    strurl = "http://www.oxforddictionaries.com/definition/english/"+word    
+    page= urllib2.urlopen(strurl).read()
+    end_page = page.find('Origin')
+    start_page = page.find('See definition in')
+    index_start = page.find('class="iteration">')
+    index_end   = page.find('</span><span class="exampleGroup',index_start)
+    mean_end = index_start
+    mean=[]
+    mean_start = page.find('<header')
+    while page.find('entryHeader',mean_start) - mean_start > 20 and mean_start != -1:
+        mean_start = page.find('<header',mean_start+1)
+    mean_end = mean_start 
+    while page.find('se1 senseGroup',mean_start) != -1 :
+        mean_start = page.find('<section class="se1 senseGroup"',mean_end)
+        mean_end = page.find('</section',mean_start)
+        mean_end = page.find('>',mean_end)+1
+        mean.append(  omitTags(page,mean_start,mean_end))
+        mean_start = mean_end
+    return mean
+
+#f=open("words.txt","r")
+#intead of file, read from site
+strurl = "http://mytest.hamrahclass.ir/words.txt"   
+words= urllib2.urlopen(strurl).read()
+print words
+#words = f.read()
+words = words.split()
+fo=open("means.xls","w")
+for word in words:
+    fo.write('\n')
+    L = getMeaningList(str(word))
+    if len(L) == 0 :
+        continue
+    for e in L :
+        print e
+        fo.write( e )
+        fo.write('\t')    
+f.close()
+fo.close()
+
+
+"""
+        mean.append(  page[mean_start:mean_end])
+        mean.append(  omitTags(page,mean_start,mean_end))
+
+
+f=open("page.htm","a")
+page= urllib2.urlopen("http://www.merriam-webster.com/dictionary/happy").read()
+index_start = page.find('<div class="ld_on_collegiate">')
+index_end   = page.find('</div>',index_start)
+#mstr=page[index_start : index_end]
+mean_end = index_start
+mean=[]
+i=0
+
+while index_end - mean_end > 5 :
+    mean_start = page.find('<p',mean_end)
+    mean_start = page.find(":",mean_start)
+    mean_end   = page.find('</p>',mean_start+1)
+    if mean_end == -1 :
+        break
+    mean.append(  page[mean_start:mean_end])
+
+f.write(page)
+f.close()
+
+"""
+
+
